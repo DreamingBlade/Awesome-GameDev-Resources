@@ -14,7 +14,10 @@ struct Hex {
 	  this->y = y;
 	  this->blocked = blocked;
       this->rightShifted = shifted;
-	  weight = 0;
+	  if (blocked)
+	  {
+		  this->weight = 9;
+	  }
   }
   Hex(){ 
 	  x = 0;
@@ -22,85 +25,80 @@ struct Hex {
           blocked = false;
           rightShifted = false;
 		  weight = 0;
-  };
+  }
 };
 
 struct Cat : public IAgent {
 	
-	std::pair<int,int> move(const std::vector<bool>& world, std::pair<int,int> catPos, int sideSize ) override
+	std::pair<int, int> move(const std::vector<bool>& world, std::pair<int, int> catPos, int sideSize) override
 	{
-		int xMove = 2;
-		int yMove = 2;
-		
+		int xMove = 0;
+		int yMove = 0;
+
 		std::vector<Hex> grid;
 
 		int minSide;
-        int maxSide;
+		int maxSide;
 
 		Hex catHex;
 
 		//Figuring out how wide and tall the grid is with its negative to positive form.
 		if (sideSize % 2 == 0)
 		{
-			minSide = (-sideSize / 2) - 1;
-            maxSide = sideSize / 2;
+			minSide = -((sideSize / 2) + 1);
+			maxSide = sideSize / 2;
 		}
 		else
 		{
-            minSide = -sideSize / 2;
-            maxSide = sideSize / 2;
+			minSide = -((sideSize / 2));
+			maxSide = sideSize / 2;
 		}
-
 		//Getting the positions into an easily understandable format.
 		int dataPull = 0;
-        bool shift = false;
-		for (int i = minSide; i < maxSide; i++)
+		bool shift = false;
+		for (int i = minSide; i <= maxSide; i++)
 		{
-				for (int j = minSide; j < maxSide; j++)
+			for (int j = minSide; j <= maxSide; j++)
+			{
+				Hex aHex;
+				if (i % 2 == 1)
 				{
-                    Hex aHex;
-					if (i % 2 == 1)
-					{
-						bool shift = true;
-                    } 
-					else
-					{
-						shift = false;
-                    }
-                    aHex.setHex(i, j, world.at(dataPull), shift);
-                    
-					if (i == catPos.first && j == catPos.second)
-					{
-                        aHex.weight = 1000;
-						catHex = aHex;
-                        grid.push_back(aHex);
-                    }
-					else
-					{
-                        grid.push_back(aHex);
-                    }
-                    dataPull++;
+					bool shift = true;
 				}
+				else
+				{
+					shift = false;
+				}
+				aHex.setHex(j, i, world.at(dataPull), shift);
+
+				grid.push_back(aHex);
+
+				dataPull++;
+			}
 		}
-		
 		Hex currentHex = catHex;
-        currentHex.weight = 0;
-		//Checking adjecent tiles.
+		//Checking adjacent tiles.
 		bool exitFound = false;
-        Hex exit;
-        std::vector<Hex> queuedHexes;
+		Hex exit;
+		std::vector<Hex> queuedHexes;
 		queuedHexes.push_back(currentHex);
 		int hexesChecked = 0;
+		bool upLeftFound = false;
+		bool upRightFound = false;
+		bool leftFound = false;
+		bool rightFound = false;
+		bool downRightFound = false;
+		bool downLeftFound = false;
 		//Finding the end target for the cat.
 		while (queuedHexes.size() > hexesChecked && exitFound == false)
 		{
 			currentHex = queuedHexes.at(hexesChecked);
-			bool upLeftFound = false;
-			bool upRightFound = false;
-			bool leftFound = false;
-			bool rightFound = false;
-			bool downRightFound = false;
-			bool downLeftFound = false;
+			upLeftFound = false;
+			upRightFound = false;
+			leftFound = false;
+			rightFound = false;
+			downRightFound = false;
+			downLeftFound = false;
 			for (int i = 0; i < grid.size(); i++)
 			{
 				int tileX = grid.at(i).x;
@@ -172,6 +170,7 @@ struct Cat : public IAgent {
 						}
 						rightFound = true;
 					}
+					//Check down left
 					if (currentHex.x - 1 == tileX && currentHex.y + 1 == tileY)
 					{
 						if (grid.at(i).weight == 0)
@@ -334,8 +333,6 @@ struct Cat : public IAgent {
 			if (exitFound == true)
 			{
 				exit = currentHex;
-
-				queuedHexes.clear();
 			}
 			hexesChecked++;
 		}
@@ -344,113 +341,15 @@ struct Cat : public IAgent {
 		{
 			return { catPos.first, catPos.second };
 		}
-		
-		bool moveFound = false;
 
-		while (moveFound == false)
+		for (int i = 0; i < queuedHexes.size(); i++)
 		{
-			for (int i = 0; i < grid.size(); i++)
+			if (queuedHexes.at(i).weight == 1 && queuedHexes.at(i).blocked == false)
 			{
-				int tileX = grid.at(i).x;
-				int tileY = grid.at(i).y;
-
-				if (!currentHex.rightShifted)
-				{
-					if (currentHex.x - 1 == tileX && currentHex.y - 1 == tileY)
-					{
-						if (grid.at(i).weight < currentHex.weight)
-						{
-							currentHex = grid.at(i);
-						}
-					}
-					if (currentHex.x == tileX && currentHex.y - 1 == tileY)
-					{
-						if (grid.at(i).weight < currentHex.weight)
-						{
-							currentHex = grid.at(i);
-						}
-					}
-					if (currentHex.x - 1 == tileX && currentHex.y == tileY)
-					{
-						if (grid.at(i).weight < currentHex.weight)
-						{
-							currentHex = grid.at(i);
-						}
-					}
-					if (currentHex.x + 1 == tileX && currentHex.y == tileY)
-					{
-						if (grid.at(i).weight < currentHex.weight)
-						{
-							currentHex = grid.at(i);
-						}
-					}
-					if (currentHex.x - 1 == tileX && currentHex.y + 1 == tileY)
-					{
-						if (grid.at(i).weight < currentHex.weight)
-						{
-							currentHex = grid.at(i);
-						}
-					}
-					if (currentHex.x == tileX && currentHex.y + 1 == tileY)
-					{
-						if (grid.at(i).weight < currentHex.weight)
-						{
-							currentHex = grid.at(i);
-						}
-					}
-				}
-				else
-				{
-					if (currentHex.x == tileX && currentHex.y - 1 == tileY)
-					{
-						if (grid.at(i).weight < currentHex.weight)
-						{
-							currentHex = grid.at(i);
-						}
-					}
-					if (currentHex.x + 1 == tileX && currentHex.y - 1 == tileY)
-					{
-						if (grid.at(i).weight < currentHex.weight)
-						{
-							currentHex = grid.at(i);
-						}
-					}
-					if (currentHex.x - 1 == tileX && currentHex.y == tileY)
-					{
-						if (grid.at(i).weight < currentHex.weight)
-						{
-							currentHex = grid.at(i);
-						}
-					}
-					if (currentHex.x + 1 == tileX && currentHex.y == tileY)
-					{
-						if (grid.at(i).weight < currentHex.weight)
-						{
-							currentHex = grid.at(i);
-						}
-					}
-					if (currentHex.x == tileX && currentHex.y + 1 == tileY)
-					{
-						if (grid.at(i).weight < currentHex.weight)
-						{
-							currentHex = grid.at(i);
-						}
-					}
-					if (currentHex.x + 1 == tileX && currentHex.y + 1 == tileY)
-					{
-						if (grid.at(i).weight < currentHex.weight)
-						{
-							currentHex = grid.at(i);
-						}
-					}
-				}
-			}
-			if (currentHex.weight == 1)
-			{
-				
-				moveFound = true;
+				return{ queuedHexes.at(i).x, queuedHexes.at(i).y};
 			}
 		}
+
 		//Sending where the cat should move to.
 		return {currentHex.x, currentHex.y}; 
 	}
